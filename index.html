@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPRIS - Phosphate & Phosphogypsum Radioactivity Information System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 120px;
+        }
+
+        select, input {
+            padding: 0.75rem;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .map-container, .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .map-container h3, .chart-container h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        #map {
+            height: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .chart-wrapper {
+            height: 400px;
+            position: relative;
+        }
+
+        .data-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+
+        .data-table h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .legend {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group label {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏭 PPRIS - Phosphate & Phosphogypsum Radioactivity Information System</h1>
+        <p>Global monitoring of radioactive elements in phosphate mining and phosphogypsum storage sites</p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="countryFilter">Country:</label>
+                <select id="countryFilter">
+                    <option value="all">All Countries</option>
+                    <option value="USA">United States</option>
+                    <option value="CHN">China</option>
+                    <option value="BRA">Brazil</option>
+                    <option value="ESP">Spain</option>
+                    <option value="MAR">Morocco</option>
+                    <option value="RUS">Russia</option>
+                    <option value="IND">India</option>
+                </select>
+
+                <label for="elementFilter">Radioactive Element:</label>
+                <select id="elementFilter">
+                    <option value="all">All Elements</option>
+                    <option value="U-238">Uranium-238</option>
+                    <option value="Ra-226">Radium-226</option>
+                    <option value="Th-232">Thorium-232</option>
+                    <option value="K-40">Potassium-40</option>
+                    <option value="Po-210">Polonium-210</option>
+                    <option value="Pb-210">Lead-210</option>
+                </select>
+
+                <label for="siteType">Site Type:</label>
+                <select id="siteType">
+                    <option value="all">All Sites</option>
+                    <option value="phosphate_mine">Phosphate Mine</option>
+                    <option value="phosphogypsum_stack">Phosphogypsum Stack</option>
+                    <option value="processing_plant">Processing Plant</option>
+                </select>
+
+                <button class="btn" onclick="updateData()">Update Data</button>
+                <button class="btn" onclick="exportData()">Export CSV</button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalSites">147</div>
+                <div class="stat-label">Total Sites</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalCountries">23</div>
+                <div class="stat-label">Countries</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgRadiation">1.2</div>
+                <div class="stat-label">Avg Radiation (mSv/yr)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="highRiskSites">12</div>
+                <div class="stat-label">High Risk Sites</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="map-container">
+                <h3>📍 Global Site Locations</h3>
+                <div id="map"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #e74c3c;"></div>
+                        <span>High Radiation (>2 mSv/yr)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f39c12;"></div>
+                        <span>Medium Radiation (1-2 mSv/yr)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #27ae60;"></div>
+                        <span>Low Radiation (<1 mSv/yr)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>📊 Radioactive Elements Analysis</h3>
+                <div class="chart-wrapper">
+                    <canvas id="elementsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>🌍 Radiation Levels by Country</h3>
+            <div class="chart-wrapper">
+                <canvas id="countryChart"></canvas>
+            </div>
+        </div>
+
+        <div class="data-table">
+            <h3>📋 Detailed Site Information</h3>
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Site Name</th>
+                        <th>Country</th>
+                        <th>Type</th>
+                        <th>Latitude</th>
+                        <th>Longitude</th>
+                        <th>U-238 (Bq/kg)</th>
+                        <th>Ra-226 (Bq/kg)</th>
+                        <th>Th-232 (Bq/kg)</th>
+                        <th>Risk Level</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // Sample data - replace with your actual data source
+        const siteData = [
+            {
+                name: "Huelva Phosphogypsum Stack",
+                country: "ESP",
+                type: "phosphogypsum_stack",
+                lat: 37.2518,
+                lng: -6.9447,
+                elements: { "U-238": 850, "Ra-226": 820, "Th-232": 45, "K-40": 380, "Po-210": 720, "Pb-210": 690 },
+                riskLevel: "High"
+            },
+            {
+                name: "Bone Valley Mine",
+                country: "USA",
+                type: "phosphate_mine",
+                lat: 27.8333,
+                lng: -81.8333,
+                elements: { "U-238": 1200, "Ra-226": 1150, "Th-232": 55, "K-40": 420, "Po-210": 980, "Pb-210": 890 },
+                riskLevel: "High"
+            },
+            {
+                name: "Khouribga Phosphate Mine",
+                country: "MAR",
+                type: "phosphate_mine",
+                lat: 32.8811,
+                lng: -6.9063,
+                elements: { "U-238": 650, "Ra-226": 630, "Th-232": 38, "K-40": 290, "Po-210": 580, "Pb-210": 520 },
+                riskLevel: "Medium"
+            },
+            {
+                name: "Yunnan Phosphate Plant",
+                country: "CHN",
+                type: "processing_plant",
+                lat: 24.8801,
+                lng: 102.8329,
+                elements: { "U-238": 420, "Ra-226": 380, "Th-232": 28, "K-40": 180, "Po-210": 350, "Pb-210": 320 },
+                riskLevel: "Low"
+            },
+            {
+                name: "Tapira Mine",
+                country: "BRA",
+                type: "phosphate_mine",
+                lat: -19.9167,
+                lng: -46.8333,
+                elements: { "U-238": 780, "Ra-226": 750, "Th-232": 42, "K-40": 340, "Po-210": 680, "Pb-210": 620 },
+                riskLevel: "Medium"
+            },
+            {
+                name: "Kola Peninsula Plant",
+                country: "RUS",
+                type: "processing_plant",
+                lat: 67.7749,
+                lng: 33.1859,
+                elements: { "U-238": 320, "Ra-226": 290, "Th-232": 22, "K-40": 150, "Po-210": 280, "Pb-210": 250 },
+                riskLevel: "Low"
+            }
+        ];
+
+        let map, elementsChart, countryChart;
+        let filteredData = [...siteData];
+
+        // Initialize the application
+        function initApp() {
+            initMap();
+            initCharts();
+            updateTable();
+            updateStats();
+        }
+
+        // Initialize the map
+        function initMap() {
+            map = L.map('map').setView([20, 0], 2);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            updateMapMarkers();
+        }
+
+        // Update map markers based on filtered data
+        function updateMapMarkers() {
+            // Clear existing markers
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            filteredData.forEach(site => {
+                const color = getColorByRisk(site.riskLevel);
+                const icon = L.divIcon({
+                    html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                    iconSize: [20, 20],
+                    className: 'custom-marker'
+                });
+
+                const marker = L.marker([site.lat, site.lng], { icon }).addTo(map);
+                
+                const popupContent = `
+                    <div style="min-width: 200px;">
+                        <h4>${site.name}</h4>
+                        <p><strong>Country:</strong> ${getCountryName(site.country)}</p>
+                        <p><strong>Type:</strong> ${site.type.replace('_', ' ')}</p>
+                        <p><strong>Risk Level:</strong> ${site.riskLevel}</p>
+                        <hr>
+                        <p><strong>Key Elements:</strong></p>
+                        <p>U-238: ${site.elements["U-238"]} Bq/kg</p>
+                        <p>Ra-226: ${site.elements["Ra-226"]} Bq/kg</p>
+                        <p>Th-232: ${site.elements["Th-232"]} Bq/kg</p>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+            });
+        }
+
+        // Initialize charts
+        function initCharts() {
+            // Elements chart
+            const elementsCtx = document.getElementById('elementsChart').getContext('2d');
+            elementsChart = new Chart(elementsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['U-238', 'Ra-226', 'Th-232', 'K-40', 'Po-210', 'Pb-210'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Country chart
+            const countryCtx = document.getElementById('countryChart').getContext('2d');
+            countryChart = new Chart(countryCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Average Radiation Level (mSv/yr)',
+                        data: [],
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Radiation Level (mSv/yr)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            updateCharts();
+        }
+
+        // Update charts with filtered data
+        function updateCharts() {
+            // Update elements chart
+            const elementTotals = {};
+            filteredData.forEach(site => {
+                Object.keys(site.elements).forEach(element => {
+                    elementTotals[element] = (elementTotals[element] || 0) + site.elements[element];
+                });
+            });
+
+            elementsChart.data.datasets[0].data = Object.values(elementTotals);
+            elementsChart.update();
+
+            // Update country chart
+            const countryData = {};
+            filteredData.forEach(site => {
+                const country = getCountryName(site.country);
+                const avgRadiation = calculateRadiationLevel(site.elements);
+                countryData[country] = (countryData[country] || []).concat([avgRadiation]);
+            });
+
+            const countryLabels = Object.keys(countryData);
+            const countryValues = countryLabels.map(country => 
+                countryData[country].reduce((a, b) => a + b, 0) / countryData[country].length
+            );
+
+            countryChart.data.labels = countryLabels;
+            countryChart.data.datasets[0].data = countryValues;
+            countryChart.update();
+        }
+
+        // Update data table
+        function updateTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            filteredData.forEach(site => {
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${site.name}</td>
+                    <td>${getCountryName(site.country)}</td>
+                    <td>${site.type.replace('_', ' ')}</td>
+                    <td>${site.lat.toFixed(4)}</td>
+                    <td>${site.lng.toFixed(4)}</td>
+                    <td>${site.elements["U-238"]}</td>
+                    <td>${site.elements["Ra-226"]}</td>
+                    <td>${site.elements["Th-232"]}</td>
+                    <td><span style="color: ${getColorByRisk(site.riskLevel)}; font-weight: bold;">${site.riskLevel}</span></td>
+                `;
+            });
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalSites').textContent = filteredData.length;
+            document.getElementById('totalCountries').textContent = new Set(filteredData.map(s => s.country)).size;
+            
+            const avgRad = filteredData.reduce((sum, site) => 
+                sum + calculateRadiationLevel(site.elements), 0) / filteredData.length;
+            document.getElementById('avgRadiation').textContent = avgRad.toFixed(1);
+            
+            document.getElementById('highRiskSites').textContent = 
+                filteredData.filter(s => s.riskLevel === 'High').length;
+        }
+
+        // Update data based on filters
+        function updateData() {
+            const countryFilter = document.getElementById('countryFilter').value;
+            const elementFilter = document.getElementById('elementFilter').value;
+            const siteTypeFilter = document.getElementById('siteType').value;
+
+            filteredData = siteData.filter(site => {
+                return (countryFilter === 'all' || site.country === countryFilter) &&
+                       (elementFilter === 'all' || site.elements[elementFilter] > 0) &&
+                       (siteTypeFilter === 'all' || site.type === siteTypeFilter);
+            });
+
+            updateMapMarkers();
+            updateCharts();
+            updateTable();
+            updateStats();
+        }
+
+        // Export data to CSV
+        function exportData() {
+            const headers = ['Site Name', 'Country', 'Type', 'Latitude', 'Longitude', 'U-238', 'Ra-226', 'Th-232', 'Risk Level'];
+            const csvContent = [
+                headers.join(','),
+                ...filteredData.map(site => [
+                    site.name,
+                    getCountryName(site.country),
+                    site.type,
+                    site.lat,
+                    site.lng,
+                    site.elements["U-238"],
+                    site.elements["Ra-226"],
+                    site.elements["Th-232"],
+                    site.riskLevel
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'phosphate_radioactivity_data.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Helper functions
+        function getColorByRisk(riskLevel) {
+            switch(riskLevel) {
+                case 'High': return '#e74c3c';
+                case 'Medium': return '#f39c12';
+                case 'Low': return '#27ae60';
+                default: return '#95a5a6';
+            }
+        }
+
+        function getCountryName(code) {
+            const countries = {
+                'USA': 'United States',
+                'CHN': 'China',
+                'BRA': 'Brazil',
+                'ESP': 'Spain',
+                'MAR': 'Morocco',
+                'RUS': 'Russia',
+                'IND': 'India'
+            };
+            return countries[code] || code;
+        }
+
+        function calculateRadiationLevel(elements) {
+            // Simplified calculation - adjust based on your specific methodology
+            return (elements["U-238"] + elements["Ra-226"] + elements["Th-232"]) / 1000;
+        }
+
+        // Initialize the application when the page loads
+        window.onload = initApp;
+    </script>
+</body>
+</html>
