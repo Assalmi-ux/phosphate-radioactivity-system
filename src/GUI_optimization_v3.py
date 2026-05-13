@@ -21,7 +21,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationTool
 from matplotlib.patches import Rectangle
 from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
-from scipy.integrate import trapz
+try:
+    from scipy.integrate import trapezoid as trapz
+except ImportError:
+    from scipy.integrate import trapz
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QPushButton, QLabel, QLineEdit, 
                             QComboBox, QGroupBox, QTabWidget, QTextEdit,
