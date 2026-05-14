@@ -34,9 +34,12 @@ HPGeDetectorConstruction::HPGeDetectorConstruction()
   fLi(nullptr), fBoron(nullptr), fLead(nullptr), fWater(nullptr), 
   fSteel(nullptr), fPerspex(nullptr), fPolypropylene(nullptr), fSoil(nullptr),
   fGlass(nullptr), fPVC(nullptr), fHDPE(nullptr), fCarbonEpoxy(nullptr),
+  fPolycarbonate(nullptr), fPolyester(nullptr), fActivatedCarbon(nullptr),
   fUseCanberraGeometry(true),
   fMarinelliLogical(nullptr), fWorldPhysical(nullptr),
-  fDiskSourceLogical(nullptr), fCylinderSourceLogical(nullptr), fCylinderWallLogical(nullptr) {
+  fDiskSourceLogical(nullptr), fCylinderSourceLogical(nullptr), fCylinderWallLogical(nullptr),
+  fCartridgeSourceLogical(nullptr), fCartridgeHousingLogical(nullptr),
+  fFilterSourceLogical(nullptr), fFilterSealLogical(nullptr) {
     
     DefineMaterials();
     
@@ -53,6 +56,12 @@ HPGeDetectorConstruction::HPGeDetectorConstruction()
     
     // Initialize Cylinder source config
     fCylinderSourceConfig.isActive = false;
+    
+    // Initialize Cartridge source config (Type D)
+    fCartridgeSourceConfig.isActive = false;
+    
+    // Initialize Filter source config (Type M53)
+    fFilterSourceConfig.isActive = false;
 }
 
 // ==================================================================
@@ -153,6 +162,22 @@ void HPGeDetectorConstruction::DefineMaterials() {
     fCarbonEpoxy->AddElement(H, 8);
     fCarbonEpoxy->AddElement(O, 12);
     fCarbonEpoxy->AddElement(N, 4);
+    
+    // Polycarbonate (C16H14O3) - housing for Orano LEA sources
+    fPolycarbonate = new G4Material("Polycarbonate", 1.20*g/cm3, 3);
+    fPolycarbonate->AddElement(C, 16);
+    fPolycarbonate->AddElement(H, 14);
+    fPolycarbonate->AddElement(O, 3);
+    
+    // Polyester (PET, C10H8O4) - sealing for paper filter sources
+    fPolyester = new G4Material("Polyester", 1.38*g/cm3, 3);
+    fPolyester->AddElement(C, 10);
+    fPolyester->AddElement(H, 8);
+    fPolyester->AddElement(O, 4);
+    
+    // Activated Carbon (amorphous carbon, porous)
+    fActivatedCarbon = new G4Material("ActivatedCarbon", 0.45*g/cm3, 1);
+    fActivatedCarbon->AddElement(C, 1);
     
     G4cout << "\n=== Materials Defined ===" << G4endl;
     G4cout << "Germanium density: " << fGe->GetDensity()/(g/cm3) << " g/cm³" << G4endl;
@@ -341,6 +366,16 @@ G4VPhysicalVolume* HPGeDetectorConstruction::Construct() {
     // Construct Cylinder source if enabled
     if (fCylinderSourceConfig.isActive) {
         ConstructCylinderSource(logicWorld);
+    }
+    
+    // Construct Cartridge source (Type D) if enabled
+    if (fCartridgeSourceConfig.isActive) {
+        ConstructCartridgeSource(logicWorld);
+    }
+    
+    // Construct Filter source (Type M53) if enabled
+    if (fFilterSourceConfig.isActive) {
+        ConstructFilterSource(logicWorld);
     }
     
     G4cout << "\n=== Detector Construction Complete ===" << G4endl;
@@ -618,6 +653,34 @@ void HPGeDetectorConstruction::EnableCylinderSource(G4bool enable) {
 }
 
 // ==================================================================
+// Set Cartridge source configuration
+// ==================================================================
+void HPGeDetectorConstruction::SetCartridgeSourceConfig(const CartridgeSourceConfig& config) {
+    fCartridgeSourceConfig = config;
+}
+
+// ==================================================================
+// Enable Cartridge source
+// ==================================================================
+void HPGeDetectorConstruction::EnableCartridgeSource(G4bool enable) {
+    fCartridgeSourceConfig.isActive = enable;
+}
+
+// ==================================================================
+// Set Filter source configuration
+// ==================================================================
+void HPGeDetectorConstruction::SetFilterSourceConfig(const FilterSourceConfig& config) {
+    fFilterSourceConfig = config;
+}
+
+// ==================================================================
+// Enable Filter source
+// ==================================================================
+void HPGeDetectorConstruction::EnableFilterSource(G4bool enable) {
+    fFilterSourceConfig.isActive = enable;
+}
+
+// ==================================================================
 // Helper: Get material by name
 // ==================================================================
 G4Material* HPGeDetectorConstruction::GetMaterialByName(const G4String& name) {
@@ -631,6 +694,10 @@ G4Material* HPGeDetectorConstruction::GetMaterialByName(const G4String& name) {
     if (name == "perspex" || name == "Perspex" || name == "PMMA") return fPerspex;
     if (name == "steel" || name == "Steel") return fSteel;
     if (name == "aluminum" || name == "Aluminum" || name == "Al") return fAl;
+    if (name == "polycarbonate" || name == "Polycarbonate" || name == "PC") return fPolycarbonate;
+    if (name == "polyester" || name == "Polyester" || name == "PET") return fPolyester;
+    if (name == "activated_carbon" || name == "ActivatedCarbon") return fActivatedCarbon;
+    if (name == "carbon_epoxy" || name == "CarbonEpoxy") return fCarbonEpoxy;
     
     G4cout << "WARNING: Unknown material '" << name << "'. Using water." << G4endl;
     return fWater;
@@ -830,6 +897,180 @@ void HPGeDetectorConstruction::ConstructCylinderSource(G4LogicalVolume* worldLog
            << " mm to Z = " << (fCylinderSourceConfig.positionZ + totalH)/mm << " mm" << G4endl;
     G4cout << "  Sample extends from Z = " << (fCylinderSourceConfig.positionZ + bottom)/mm 
            << " mm to Z = " << (fCylinderSourceConfig.positionZ + totalH)/mm << " mm" << G4endl;
+}
+
+// ==================================================================
+// Construct Cartridge Source (Orano LEA Type D - Activated Carbon)
+// ==================================================================
+void HPGeDetectorConstruction::ConstructCartridgeSource(G4LogicalVolume* worldLogical) {
+    
+    G4cout << "\n=== Constructing Cartridge Source (Orano LEA Type D) ===" << G4endl;
+    G4cout << "Housing diameter: " << fCartridgeSourceConfig.housingDiameter/mm << " mm" << G4endl;
+    G4cout << "Housing height: " << fCartridgeSourceConfig.housingHeight/mm << " mm" << G4endl;
+    G4cout << "Active diameter: " << fCartridgeSourceConfig.activeDiameter/mm << " mm" << G4endl;
+    G4cout << "Active thickness: " << fCartridgeSourceConfig.activeThickness/mm << " mm" << G4endl;
+    G4cout << "Position Z: " << fCartridgeSourceConfig.positionZ/mm << " mm" << G4endl;
+    
+    G4double housingR = fCartridgeSourceConfig.housingDiameter / 2.0;
+    G4double housingH = fCartridgeSourceConfig.housingHeight;
+    G4double activeR = fCartridgeSourceConfig.activeDiameter / 2.0;
+    G4double activeH = fCartridgeSourceConfig.activeThickness;
+    G4double wallThk = fCartridgeSourceConfig.wallThickness;
+    G4double centerZ = fCartridgeSourceConfig.positionZ + housingH / 2.0;
+    
+    G4Material* housingMat = GetMaterialByName(fCartridgeSourceConfig.housingMaterial);
+    G4Material* activeMat = GetMaterialByName(fCartridgeSourceConfig.activeMaterial);
+    
+    // Housing: outer cylinder with cavity
+    G4Tubs* solidHousingOuter = new G4Tubs("CartridgeHousingOuter",
+                                            0, housingR,
+                                            housingH / 2.0,
+                                            0, twopi);
+    
+    G4Tubs* solidHousingCavity = new G4Tubs("CartridgeHousingCavity",
+                                             0, activeR,
+                                             activeH / 2.0,
+                                             0, twopi);
+    
+    G4SubtractionSolid* solidHousing = new G4SubtractionSolid("CartridgeHousing",
+                                                               solidHousingOuter,
+                                                               solidHousingCavity,
+                                                               0,
+                                                               G4ThreeVector(0, 0, (housingH - activeH) / 2.0 - wallThk));
+    
+    fCartridgeHousingLogical = new G4LogicalVolume(solidHousing,
+                                                    housingMat,
+                                                    "CartridgeHousing_Logical");
+    
+    G4VisAttributes* housingVis = new G4VisAttributes(G4Colour(0.85, 0.85, 0.80, 0.4));
+    housingVis->SetForceSolid(true);
+    fCartridgeHousingLogical->SetVisAttributes(housingVis);
+    
+    new G4PVPlacement(0,
+                     G4ThreeVector(0, 0, centerZ),
+                     fCartridgeHousingLogical,
+                     "CartridgeHousing_phys",
+                     worldLogical,
+                     false,
+                     0);
+    
+    // Active matrix: activated carbon disk
+    G4Tubs* solidActive = new G4Tubs("CartridgeActive",
+                                      0, activeR,
+                                      activeH / 2.0,
+                                      0, twopi);
+    
+    fCartridgeSourceLogical = new G4LogicalVolume(solidActive,
+                                                   activeMat,
+                                                   "CartridgeActive_Logical");
+    
+    G4VisAttributes* activeVis = new G4VisAttributes(G4Colour(0.2, 0.2, 0.2, 0.7));
+    activeVis->SetForceSolid(true);
+    fCartridgeSourceLogical->SetVisAttributes(activeVis);
+    
+    G4double activeCenterZ = centerZ + (housingH - activeH) / 2.0 - wallThk;
+    
+    new G4PVPlacement(0,
+                     G4ThreeVector(0, 0, activeCenterZ),
+                     fCartridgeSourceLogical,
+                     "CartridgeActive_phys",
+                     worldLogical,
+                     false,
+                     0);
+    
+    G4double activeVolume = pi * activeR * activeR * activeH;
+    G4double housingVolume = pi * housingR * housingR * housingH;
+    
+    G4cout << "  Active matrix volume: " << activeVolume/cm3 << " cm3" << G4endl;
+    G4cout << "  Housing volume: " << housingVolume/cm3 << " cm3" << G4endl;
+    G4cout << "  Center position: Z = " << centerZ/mm << " mm" << G4endl;
+}
+
+// ==================================================================
+// Construct Filter Source (Orano LEA Type M - Paper Filter)
+// ==================================================================
+void HPGeDetectorConstruction::ConstructFilterSource(G4LogicalVolume* worldLogical) {
+    
+    G4cout << "\n=== Constructing Filter Source (Orano LEA Type M) ===" << G4endl;
+    G4cout << "Outer diameter: " << fFilterSourceConfig.outerDiameter/mm << " mm" << G4endl;
+    G4cout << "Active diameter: " << fFilterSourceConfig.activeDiameter/mm << " mm" << G4endl;
+    G4cout << "Filter thickness: " << fFilterSourceConfig.filterThickness/mm << " mm" << G4endl;
+    G4cout << "Seal thickness: " << fFilterSourceConfig.sealThickness/mm << " mm" << G4endl;
+    G4cout << "Position Z: " << fFilterSourceConfig.positionZ/mm << " mm" << G4endl;
+    
+    G4double outerR = fFilterSourceConfig.outerDiameter / 2.0;
+    G4double activeR = fFilterSourceConfig.activeDiameter / 2.0;
+    G4double filterH = fFilterSourceConfig.filterThickness;
+    G4double sealH = fFilterSourceConfig.sealThickness;
+    G4double totalH = filterH + 2.0 * sealH;  // Sealed between two polyester sheets
+    G4double centerZ = fFilterSourceConfig.positionZ;
+    
+    G4Material* filterMat = GetMaterialByName(fFilterSourceConfig.filterMaterial);
+    G4Material* sealMat = GetMaterialByName(fFilterSourceConfig.sealMaterial);
+    
+    // Polyester seal (outer envelope covering full diameter)
+    G4Tubs* solidSeal = new G4Tubs("FilterSeal",
+                                    0, outerR,
+                                    totalH / 2.0,
+                                    0, twopi);
+    
+    // Cavity for filter paper
+    G4Tubs* solidSealCavity = new G4Tubs("FilterSealCavity",
+                                          0, activeR,
+                                          filterH / 2.0,
+                                          0, twopi);
+    
+    G4SubtractionSolid* solidSealFinal = new G4SubtractionSolid("FilterSealFinal",
+                                                                  solidSeal,
+                                                                  solidSealCavity,
+                                                                  0,
+                                                                  G4ThreeVector(0, 0, 0));
+    
+    fFilterSealLogical = new G4LogicalVolume(solidSealFinal,
+                                              sealMat,
+                                              "FilterSeal_Logical");
+    
+    G4VisAttributes* sealVis = new G4VisAttributes(G4Colour(0.9, 0.9, 0.85, 0.3));
+    sealVis->SetForceSolid(true);
+    fFilterSealLogical->SetVisAttributes(sealVis);
+    
+    new G4PVPlacement(0,
+                     G4ThreeVector(0, 0, centerZ),
+                     fFilterSealLogical,
+                     "FilterSeal_phys",
+                     worldLogical,
+                     false,
+                     0);
+    
+    // Active filter paper (radionuclides deposited on paper)
+    G4Tubs* solidFilter = new G4Tubs("FilterActive",
+                                      0, activeR,
+                                      filterH / 2.0,
+                                      0, twopi);
+    
+    fFilterSourceLogical = new G4LogicalVolume(solidFilter,
+                                                filterMat,
+                                                "FilterActive_Logical");
+    
+    G4VisAttributes* filterVis = new G4VisAttributes(G4Colour(1.0, 0.9, 0.0, 0.7));
+    filterVis->SetForceSolid(true);
+    fFilterSourceLogical->SetVisAttributes(filterVis);
+    
+    new G4PVPlacement(0,
+                     G4ThreeVector(0, 0, centerZ),
+                     fFilterSourceLogical,
+                     "FilterActive_phys",
+                     worldLogical,
+                     false,
+                     0);
+    
+    G4double activeArea = pi * activeR * activeR;
+    G4double totalArea = pi * outerR * outerR;
+    
+    G4cout << "  Active area: " << activeArea/cm2 << " cm2" << G4endl;
+    G4cout << "  Total area: " << totalArea/cm2 << " cm2" << G4endl;
+    G4cout << "  Total thickness (with seal): " << totalH/mm << " mm" << G4endl;
+    G4cout << "  Center position: Z = " << centerZ/mm << " mm" << G4endl;
 }
 
 // ==================================================================

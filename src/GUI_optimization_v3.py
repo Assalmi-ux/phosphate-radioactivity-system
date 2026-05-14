@@ -1524,6 +1524,331 @@ class CylinderSourceConfigDialog(QDialog):
 
 
 # ==================================================================
+# CARTRIDGE SOURCE CONFIG DIALOG (Orano LEA Type D)
+# ==================================================================
+
+class CartridgeSourceConfigDialog(QDialog):
+    """Dialog for configuring Orano LEA Type D activated carbon cartridge source"""
+    def __init__(self, parent=None, current_config=None):
+        super().__init__(parent)
+        self.setWindowTitle("Cartridge Source Configuration (Orano LEA Type D)")
+        self.resize(550, 500)
+        self.config = current_config or {
+            'enabled': True,
+            'housing_diameter': 56.0,
+            'housing_height': 26.5,
+            'active_diameter': 52.0,
+            'active_thickness': 20.5,
+            'wall_thickness': 2.0,
+            'position_z': -40.0,
+            'housing_material': 'polycarbonate',
+            'active_material': 'activated_carbon'
+        }
+        self.init_ui()
+    
+    def init_ui(self):
+        layout = QVBoxLayout()
+        
+        header = QLabel("<h3>Orano LEA Type D - Activated Carbon Cartridge</h3>")
+        header.setAlignment(Qt.AlignCenter)
+        layout.addWidget(header)
+        
+        info_label = QLabel(
+            "Cartouche de charbon actif (activated carbon cartridge).\n"
+            "Polycarbonate housing with activated carbon matrix inside.\n"
+            "Radionuclides trapped in activated carbon filter."
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #666; margin-bottom: 10px;")
+        layout.addWidget(info_label)
+        
+        # Housing dimensions group
+        housing_group = QGroupBox("Housing (Polycarbonate Box)")
+        housing_layout = QGridLayout()
+        
+        housing_layout.addWidget(QLabel("Housing Diameter:"), 0, 0)
+        self.housing_diameter_spin = QDoubleSpinBox()
+        self.housing_diameter_spin.setRange(10, 200)
+        self.housing_diameter_spin.setValue(self.config['housing_diameter'])
+        self.housing_diameter_spin.setSuffix(" mm")
+        self.housing_diameter_spin.setDecimals(1)
+        housing_layout.addWidget(self.housing_diameter_spin, 0, 1)
+        
+        housing_layout.addWidget(QLabel("Housing Height:"), 1, 0)
+        self.housing_height_spin = QDoubleSpinBox()
+        self.housing_height_spin.setRange(5, 100)
+        self.housing_height_spin.setValue(self.config['housing_height'])
+        self.housing_height_spin.setSuffix(" mm")
+        self.housing_height_spin.setDecimals(1)
+        housing_layout.addWidget(self.housing_height_spin, 1, 1)
+        
+        housing_layout.addWidget(QLabel("Wall Thickness:"), 2, 0)
+        self.wall_thickness_spin = QDoubleSpinBox()
+        self.wall_thickness_spin.setRange(0.5, 10)
+        self.wall_thickness_spin.setValue(self.config['wall_thickness'])
+        self.wall_thickness_spin.setSuffix(" mm")
+        self.wall_thickness_spin.setDecimals(1)
+        housing_layout.addWidget(self.wall_thickness_spin, 2, 1)
+        
+        housing_group.setLayout(housing_layout)
+        layout.addWidget(housing_group)
+        
+        # Active matrix group
+        active_group = QGroupBox("Active Matrix (Activated Carbon)")
+        active_layout = QGridLayout()
+        
+        active_layout.addWidget(QLabel("Active Diameter:"), 0, 0)
+        self.active_diameter_spin = QDoubleSpinBox()
+        self.active_diameter_spin.setRange(5, 200)
+        self.active_diameter_spin.setValue(self.config['active_diameter'])
+        self.active_diameter_spin.setSuffix(" mm")
+        self.active_diameter_spin.setDecimals(1)
+        active_layout.addWidget(self.active_diameter_spin, 0, 1)
+        
+        active_layout.addWidget(QLabel("Active Thickness:"), 1, 0)
+        self.active_thickness_spin = QDoubleSpinBox()
+        self.active_thickness_spin.setRange(1, 100)
+        self.active_thickness_spin.setValue(self.config['active_thickness'])
+        self.active_thickness_spin.setSuffix(" mm")
+        self.active_thickness_spin.setDecimals(1)
+        active_layout.addWidget(self.active_thickness_spin, 1, 1)
+        
+        active_group.setLayout(active_layout)
+        layout.addWidget(active_group)
+        
+        # Position group
+        pos_group = QGroupBox("Position")
+        pos_layout = QGridLayout()
+        
+        pos_layout.addWidget(QLabel("Z Position:"), 0, 0)
+        self.position_z_spin = QDoubleSpinBox()
+        self.position_z_spin.setRange(-500, 0)
+        self.position_z_spin.setValue(self.config['position_z'])
+        self.position_z_spin.setSuffix(" mm")
+        self.position_z_spin.setDecimals(1)
+        pos_layout.addWidget(self.position_z_spin, 0, 1)
+        pos_layout.addWidget(QLabel("(Negative Z = below detector window at Z=0)"), 1, 0, 1, 2)
+        
+        pos_group.setLayout(pos_layout)
+        layout.addWidget(pos_group)
+        
+        # Volume display
+        self.volume_label = QLabel("")
+        self.volume_label.setStyleSheet("font-weight: bold; color: #333;")
+        layout.addWidget(self.volume_label)
+        self.update_volume_display()
+        
+        self.active_diameter_spin.valueChanged.connect(self.update_volume_display)
+        self.active_thickness_spin.valueChanged.connect(self.update_volume_display)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        ok_btn = QPushButton("OK")
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(ok_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+        
+        self.setLayout(layout)
+    
+    def update_volume_display(self):
+        r = self.active_diameter_spin.value() / 2.0 / 10.0  # mm to cm
+        h = self.active_thickness_spin.value() / 10.0
+        vol = 3.14159 * r * r * h
+        self.volume_label.setText(f"Active Matrix Volume: {vol:.2f} cm3")
+    
+    def get_configuration(self):
+        return {
+            'enabled': True,
+            'housing_diameter': self.housing_diameter_spin.value(),
+            'housing_height': self.housing_height_spin.value(),
+            'active_diameter': self.active_diameter_spin.value(),
+            'active_thickness': self.active_thickness_spin.value(),
+            'wall_thickness': self.wall_thickness_spin.value(),
+            'position_z': self.position_z_spin.value(),
+            'housing_material': 'polycarbonate',
+            'active_material': 'activated_carbon'
+        }
+    
+    @staticmethod
+    def get_cartridge_config(parent=None, current_config=None):
+        dialog = CartridgeSourceConfigDialog(parent, current_config)
+        result = dialog.exec_()
+        return dialog.get_configuration() if result == QDialog.Accepted else None
+
+
+# ==================================================================
+# FILTER SOURCE CONFIG DIALOG (Orano LEA Type M)
+# ==================================================================
+
+class FilterSourceConfigDialog(QDialog):
+    """Dialog for configuring Orano LEA Type M paper filter source"""
+    
+    FILTER_TYPES = {
+        'M43': {'active_diameter': 43.0, 'outer_diameter': 51.0},
+        'M43-51': {'active_diameter': 43.0, 'outer_diameter': 51.0},
+        'M45-51': {'active_diameter': 45.0, 'outer_diameter': 51.0},
+        'M47-53': {'active_diameter': 47.0, 'outer_diameter': 53.0},
+        'M50': {'active_diameter': 50.0, 'outer_diameter': 63.0},
+        'M53': {'active_diameter': 47.0, 'outer_diameter': 53.0},
+        'M60': {'active_diameter': 53.0, 'outer_diameter': 60.0},
+        'M120': {'active_diameter': 120.0, 'outer_diameter': 130.0},
+    }
+    
+    def __init__(self, parent=None, current_config=None):
+        super().__init__(parent)
+        self.setWindowTitle("Filter Source Configuration (Orano LEA Type M)")
+        self.resize(550, 500)
+        self.config = current_config or {
+            'enabled': True,
+            'filter_type': 'M53',
+            'outer_diameter': 53.0,
+            'active_diameter': 47.0,
+            'filter_thickness': 0.5,
+            'seal_thickness': 0.05,
+            'position_z': -30.0
+        }
+        self.init_ui()
+    
+    def init_ui(self):
+        layout = QVBoxLayout()
+        
+        header = QLabel("<h3>Orano LEA Type M - Paper Filter Source</h3>")
+        header.setAlignment(Qt.AlignCenter)
+        layout.addWidget(header)
+        
+        info_label = QLabel(
+            "Source gamma en filtre papier (paper filter gamma source).\n"
+            "Radionuclides deposited on paper filter, sealed between\n"
+            "two thermally-bonded polyester sheets."
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #666; margin-bottom: 10px;")
+        layout.addWidget(info_label)
+        
+        # Filter type preset group
+        type_group = QGroupBox("Filter Type (Orano LEA Catalog)")
+        type_layout = QGridLayout()
+        
+        type_layout.addWidget(QLabel("Type:"), 0, 0)
+        self.filter_type_combo = QComboBox()
+        self.filter_type_combo.addItems(list(self.FILTER_TYPES.keys()))
+        idx = self.filter_type_combo.findText(self.config['filter_type'])
+        if idx >= 0:
+            self.filter_type_combo.setCurrentIndex(idx)
+        self.filter_type_combo.currentTextChanged.connect(self.on_type_changed)
+        type_layout.addWidget(self.filter_type_combo, 0, 1)
+        
+        type_group.setLayout(type_layout)
+        layout.addWidget(type_group)
+        
+        # Dimensions group
+        dim_group = QGroupBox("Dimensions")
+        dim_layout = QGridLayout()
+        
+        dim_layout.addWidget(QLabel("Outer Diameter:"), 0, 0)
+        self.outer_diameter_spin = QDoubleSpinBox()
+        self.outer_diameter_spin.setRange(10, 200)
+        self.outer_diameter_spin.setValue(self.config['outer_diameter'])
+        self.outer_diameter_spin.setSuffix(" mm")
+        self.outer_diameter_spin.setDecimals(1)
+        dim_layout.addWidget(self.outer_diameter_spin, 0, 1)
+        
+        dim_layout.addWidget(QLabel("Active Diameter:"), 1, 0)
+        self.active_diameter_spin = QDoubleSpinBox()
+        self.active_diameter_spin.setRange(5, 200)
+        self.active_diameter_spin.setValue(self.config['active_diameter'])
+        self.active_diameter_spin.setSuffix(" mm")
+        self.active_diameter_spin.setDecimals(1)
+        dim_layout.addWidget(self.active_diameter_spin, 1, 1)
+        
+        dim_layout.addWidget(QLabel("Filter Thickness:"), 2, 0)
+        self.filter_thickness_spin = QDoubleSpinBox()
+        self.filter_thickness_spin.setRange(0.01, 10)
+        self.filter_thickness_spin.setValue(self.config['filter_thickness'])
+        self.filter_thickness_spin.setSuffix(" mm")
+        self.filter_thickness_spin.setDecimals(2)
+        dim_layout.addWidget(self.filter_thickness_spin, 2, 1)
+        
+        dim_layout.addWidget(QLabel("Seal Thickness:"), 3, 0)
+        self.seal_thickness_spin = QDoubleSpinBox()
+        self.seal_thickness_spin.setRange(0.01, 5)
+        self.seal_thickness_spin.setValue(self.config['seal_thickness'])
+        self.seal_thickness_spin.setSuffix(" mm")
+        self.seal_thickness_spin.setDecimals(2)
+        dim_layout.addWidget(self.seal_thickness_spin, 3, 1)
+        
+        dim_group.setLayout(dim_layout)
+        layout.addWidget(dim_group)
+        
+        # Position group
+        pos_group = QGroupBox("Position")
+        pos_layout = QGridLayout()
+        
+        pos_layout.addWidget(QLabel("Z Position:"), 0, 0)
+        self.position_z_spin = QDoubleSpinBox()
+        self.position_z_spin.setRange(-500, 0)
+        self.position_z_spin.setValue(self.config['position_z'])
+        self.position_z_spin.setSuffix(" mm")
+        self.position_z_spin.setDecimals(1)
+        pos_layout.addWidget(self.position_z_spin, 0, 1)
+        pos_layout.addWidget(QLabel("(Negative Z = below detector window at Z=0)"), 1, 0, 1, 2)
+        
+        pos_group.setLayout(pos_layout)
+        layout.addWidget(pos_group)
+        
+        # Area display
+        self.area_label = QLabel("")
+        self.area_label.setStyleSheet("font-weight: bold; color: #cc6600;")
+        layout.addWidget(self.area_label)
+        self.update_area_display()
+        
+        self.active_diameter_spin.valueChanged.connect(self.update_area_display)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        ok_btn = QPushButton("OK")
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(ok_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+        
+        self.setLayout(layout)
+    
+    def on_type_changed(self, filter_type):
+        if filter_type in self.FILTER_TYPES:
+            specs = self.FILTER_TYPES[filter_type]
+            self.outer_diameter_spin.setValue(specs['outer_diameter'])
+            self.active_diameter_spin.setValue(specs['active_diameter'])
+    
+    def update_area_display(self):
+        r = self.active_diameter_spin.value() / 2.0 / 10.0  # mm to cm
+        area = 3.14159 * r * r
+        self.area_label.setText(f"Active Surface Area: {area:.2f} cm2")
+    
+    def get_configuration(self):
+        return {
+            'enabled': True,
+            'filter_type': self.filter_type_combo.currentText(),
+            'outer_diameter': self.outer_diameter_spin.value(),
+            'active_diameter': self.active_diameter_spin.value(),
+            'filter_thickness': self.filter_thickness_spin.value(),
+            'seal_thickness': self.seal_thickness_spin.value(),
+            'position_z': self.position_z_spin.value()
+        }
+    
+    @staticmethod
+    def get_filter_config(parent=None, current_config=None):
+        dialog = FilterSourceConfigDialog(parent, current_config)
+        result = dialog.exec_()
+        return dialog.get_configuration() if result == QDialog.Accepted else None
+
+
+# ==================================================================
 # SIMULATION WORKER
 # ==================================================================
 
@@ -1909,6 +2234,8 @@ class ConfigurationWidget(QWidget):
         self.marinelli_config = None
         self.disk_config = None
         self.cylinder_config = None
+        self.cartridge_config = None
+        self.filter_config = None
         self.geometry_widget = None  # Will be set externally
         self.init_ui()
         
@@ -1944,7 +2271,7 @@ class ConfigurationWidget(QWidget):
         type_layout = QHBoxLayout()
         type_layout.addWidget(QLabel("Source Type:"))
         self.source_type = QComboBox()
-        self.source_type.addItems(['point', 'disk', 'volume', 'marinelli'])
+        self.source_type.addItems(['point', 'disk', 'volume', 'marinelli', 'cartridge', 'filter'])
         self.source_type.currentTextChanged.connect(self.on_source_type_changed)
         type_layout.addWidget(self.source_type)
         
@@ -1964,6 +2291,16 @@ class ConfigurationWidget(QWidget):
         self.cylinder_button.setVisible(False)
         type_layout.addWidget(self.cylinder_button)
         
+        self.cartridge_button = QPushButton("⚙️ Configure Cartridge...")
+        self.cartridge_button.clicked.connect(self.configure_cartridge)
+        self.cartridge_button.setVisible(False)
+        type_layout.addWidget(self.cartridge_button)
+        
+        self.filter_button = QPushButton("⚙️ Configure Filter...")
+        self.filter_button.clicked.connect(self.configure_filter)
+        self.filter_button.setVisible(False)
+        type_layout.addWidget(self.filter_button)
+        
         geom_layout.addLayout(type_layout)
         
         # Status labels for each source type
@@ -1981,6 +2318,16 @@ class ConfigurationWidget(QWidget):
         self.cylinder_status.setStyleSheet("color: #9933cc; font-weight: bold;")
         self.cylinder_status.setVisible(False)
         geom_layout.addWidget(self.cylinder_status)
+        
+        self.cartridge_status = QLabel("")
+        self.cartridge_status.setStyleSheet("color: #336633; font-weight: bold;")
+        self.cartridge_status.setVisible(False)
+        geom_layout.addWidget(self.cartridge_status)
+        
+        self.filter_status = QLabel("")
+        self.filter_status.setStyleSheet("color: #cc6600; font-weight: bold;")
+        self.filter_status.setVisible(False)
+        geom_layout.addWidget(self.filter_status)
         
         self.position_group = QGroupBox("Position (cm)")
         pos_layout = QGridLayout()
@@ -2158,6 +2505,10 @@ class ConfigurationWidget(QWidget):
         self.disk_status.setVisible(False)
         self.cylinder_button.setVisible(False)
         self.cylinder_status.setVisible(False)
+        self.cartridge_button.setVisible(False)
+        self.cartridge_status.setVisible(False)
+        self.filter_button.setVisible(False)
+        self.filter_status.setVisible(False)
         
         # Show/hide position group based on source type
         self.position_group.setVisible(t == 'point')
@@ -2181,6 +2532,18 @@ class ConfigurationWidget(QWidget):
                 self.cylinder_status.setVisible(True)
             else:
                 self.configure_cylinder()
+        elif t == 'cartridge':
+            self.cartridge_button.setVisible(True)
+            if self.cartridge_config:
+                self.cartridge_status.setVisible(True)
+            else:
+                self.configure_cartridge()
+        elif t == 'filter':
+            self.filter_button.setVisible(True)
+            if self.filter_config:
+                self.filter_status.setVisible(True)
+            else:
+                self.configure_filter()
         
     def configure_marinelli(self):
         config = MarinelliConfigDialog.get_marinelli_config(self)
@@ -2209,6 +2572,28 @@ class ConfigurationWidget(QWidget):
                 f"   Wall: {config['wall_material']}, Fill: {config['fill_material']}"
             )
             self.cylinder_status.setVisible(True)
+    
+    def configure_cartridge(self):
+        config = CartridgeSourceConfigDialog.get_cartridge_config(self, self.cartridge_config)
+        if config:
+            self.cartridge_config = config
+            self.cartridge_status.setText(
+                f"Cartridge (Type D): Housing {config['housing_diameter']:.0f}x{config['housing_height']:.0f}mm, "
+                f"Active {config['active_diameter']:.0f}x{config['active_thickness']:.0f}mm, "
+                f"Z={config['position_z']:.0f}mm"
+            )
+            self.cartridge_status.setVisible(True)
+    
+    def configure_filter(self):
+        config = FilterSourceConfigDialog.get_filter_config(self, self.filter_config)
+        if config:
+            self.filter_config = config
+            self.filter_status.setText(
+                f"Filter ({config['filter_type']}): Active {config['active_diameter']:.0f}mm, "
+                f"Outer {config['outer_diameter']:.0f}mm, "
+                f"Z={config['position_z']:.0f}mm"
+            )
+            self.filter_status.setVisible(True)
 
     def set_geometry_widget(self, widget):
         """Set reference to the DetectorGeometryWidget"""
@@ -2282,6 +2667,44 @@ class ConfigurationWidget(QWidget):
                 lines.append("cylinder_position_z = -60.0")
                 lines.append("cylinder_wall_material = polypropylene")
                 lines.append("cylinder_fill_material = water")
+        elif st == 'cartridge':
+            if self.cartridge_config:
+                lines.append(f"cartridge_housing_diameter = {self.cartridge_config['housing_diameter']}")
+                lines.append(f"cartridge_housing_height = {self.cartridge_config['housing_height']}")
+                lines.append(f"cartridge_active_diameter = {self.cartridge_config['active_diameter']}")
+                lines.append(f"cartridge_active_thickness = {self.cartridge_config['active_thickness']}")
+                lines.append(f"cartridge_wall_thickness = {self.cartridge_config['wall_thickness']}")
+                lines.append(f"cartridge_position_z = {self.cartridge_config['position_z']}")
+                lines.append(f"cartridge_housing_material = {self.cartridge_config['housing_material']}")
+                lines.append(f"cartridge_active_material = {self.cartridge_config['active_material']}")
+            else:
+                lines.append("cartridge_housing_diameter = 56.0")
+                lines.append("cartridge_housing_height = 26.5")
+                lines.append("cartridge_active_diameter = 52.0")
+                lines.append("cartridge_active_thickness = 20.5")
+                lines.append("cartridge_wall_thickness = 2.0")
+                lines.append("cartridge_position_z = -40.0")
+                lines.append("cartridge_housing_material = polycarbonate")
+                lines.append("cartridge_active_material = activated_carbon")
+        elif st == 'filter':
+            if self.filter_config:
+                lines.append(f"filter_type = {self.filter_config['filter_type']}")
+                lines.append(f"filter_outer_diameter = {self.filter_config['outer_diameter']}")
+                lines.append(f"filter_active_diameter = {self.filter_config['active_diameter']}")
+                lines.append(f"filter_thickness = {self.filter_config['filter_thickness']}")
+                lines.append(f"filter_seal_thickness = {self.filter_config['seal_thickness']}")
+                lines.append(f"filter_position_z = {self.filter_config['position_z']}")
+                lines.append("filter_material = water")
+                lines.append("filter_seal_material = polyester")
+            else:
+                lines.append("filter_type = M53")
+                lines.append("filter_outer_diameter = 53.0")
+                lines.append("filter_active_diameter = 47.0")
+                lines.append("filter_thickness = 0.5")
+                lines.append("filter_seal_thickness = 0.05")
+                lines.append("filter_position_z = -30.0")
+                lines.append("filter_material = water")
+                lines.append("filter_seal_material = polyester")
         else:
             lines.append(f"source_x = {self.source_x.value()}")
             lines.append(f"source_y = {self.source_y.value()}")

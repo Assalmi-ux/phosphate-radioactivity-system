@@ -205,6 +205,84 @@ struct CylinderSourceConfig {
 };
 
 // ==================================================================
+// Cartridge source configuration (Orano LEA Type D)
+// ==================================================================
+struct CartridgeSourceConfig {
+    G4bool isActive;
+    G4double housingDiameter;     // Outer housing diameter
+    G4double housingHeight;       // Total housing height
+    G4double activeDiameter;      // Active matrix diameter
+    G4double activeThickness;     // Active matrix thickness
+    G4double wallThickness;       // Housing wall thickness
+    G4double positionZ;           // Z position (negative = below detector)
+    G4String housingMaterial;     // Housing material (polycarbonate)
+    G4String activeMaterial;      // Active material (activated_carbon)
+    
+    CartridgeSourceConfig() :
+        isActive(false),
+        housingDiameter(56.0*mm),     // Type D: Ø56 mm
+        housingHeight(26.5*mm),       // Type D: 26.5 mm
+        activeDiameter(52.0*mm),      // Active matrix: Ø52 mm
+        activeThickness(20.5*mm),     // Active matrix: 20.5 mm
+        wallThickness(2.0*mm),        // Polycarbonate wall
+        positionZ(-40.*mm),
+        housingMaterial("polycarbonate"),
+        activeMaterial("activated_carbon") {}
+};
+
+// ==================================================================
+// Filter source configuration (Orano LEA Type M)
+// ==================================================================
+struct FilterSourceConfig {
+    G4bool isActive;
+    G4double outerDiameter;       // Overall filter diameter
+    G4double activeDiameter;      // Active surface diameter
+    G4double filterThickness;     // Paper filter thickness
+    G4double sealThickness;       // Polyester seal sheet thickness
+    G4double positionZ;           // Z position (negative = below detector)
+    G4String filterMaterial;      // Filter material (water approximation for deposited isotopes)
+    G4String sealMaterial;        // Seal material (polyester)
+    G4String filterType;          // Filter type code (M43, M50, M53, etc.)
+    
+    FilterSourceConfig() :
+        isActive(false),
+        outerDiameter(53.0*mm),       // Type M53: Ø53 mm
+        activeDiameter(47.0*mm),      // Active surface: Ø47 mm
+        filterThickness(0.5*mm),      // Paper filter ~0.5 mm
+        sealThickness(0.05*mm),       // Polyester seal sheet ~50 um
+        positionZ(-30.*mm),
+        filterMaterial("water"),
+        sealMaterial("polyester"),
+        filterType("M53") {}
+    
+    void SetType(const std::string& type) {
+        filterType = type;
+        if (type == "M43" || type == "M43-51") {
+            activeDiameter = 43.0*mm;
+            outerDiameter = 51.0*mm;
+        } else if (type == "M45" || type == "M45-51") {
+            activeDiameter = 45.0*mm;
+            outerDiameter = 51.0*mm;
+        } else if (type == "M47" || type == "M47-53") {
+            activeDiameter = 47.0*mm;
+            outerDiameter = 53.0*mm;
+        } else if (type == "M50") {
+            activeDiameter = 50.0*mm;
+            outerDiameter = 63.0*mm;
+        } else if (type == "M53") {
+            activeDiameter = 47.0*mm;
+            outerDiameter = 53.0*mm;
+        } else if (type == "M60") {
+            activeDiameter = 53.0*mm;
+            outerDiameter = 60.0*mm;
+        } else if (type == "M120") {
+            activeDiameter = 120.0*mm;
+            outerDiameter = 130.0*mm;
+        }
+    }
+};
+
+// ==================================================================
 // Source boundary visualization configuration
 // ==================================================================
 struct SourceBoundaryConfig {
@@ -254,6 +332,18 @@ public:
     void EnableCylinderSource(G4bool enable);
     CylinderSourceConfig GetCylinderSourceConfig() const { return fCylinderSourceConfig; }
     G4bool IsCylinderSourceActive() const { return fCylinderSourceConfig.isActive; }
+    
+    // Cartridge source configuration (Orano LEA Type D)
+    void SetCartridgeSourceConfig(const CartridgeSourceConfig& config);
+    void EnableCartridgeSource(G4bool enable);
+    CartridgeSourceConfig GetCartridgeSourceConfig() const { return fCartridgeSourceConfig; }
+    G4bool IsCartridgeSourceActive() const { return fCartridgeSourceConfig.isActive; }
+    
+    // Filter source configuration (Orano LEA Type M)
+    void SetFilterSourceConfig(const FilterSourceConfig& config);
+    void EnableFilterSource(G4bool enable);
+    FilterSourceConfig GetFilterSourceConfig() const { return fFilterSourceConfig; }
+    G4bool IsFilterSourceActive() const { return fFilterSourceConfig.isActive; }
     
     // Detector geometry configuration from config.txt
     void SetDetectorGeometry(G4double crystalDiameter, G4double crystalLength,
@@ -312,6 +402,12 @@ private:
     // Cylinder source construction
     void ConstructCylinderSource(G4LogicalVolume* worldLogical);
     
+    // Cartridge source construction (Orano LEA Type D)
+    void ConstructCartridgeSource(G4LogicalVolume* worldLogical);
+    
+    // Filter source construction (Orano LEA Type M)
+    void ConstructFilterSource(G4LogicalVolume* worldLogical);
+    
     // Helper: Get material by name
     G4Material* GetMaterialByName(const G4String& name);
     
@@ -340,6 +436,9 @@ private:
     G4Material* fPVC;
     G4Material* fHDPE;
     G4Material* fCarbonEpoxy;      // Window material for Canberra detector
+    G4Material* fPolycarbonate;     // Housing for Orano LEA sources
+    G4Material* fPolyester;         // Seal for paper filter sources
+    G4Material* fActivatedCarbon;   // Active matrix for cartridge sources
     
     // Geometry mode flag
     G4bool fUseCanberraGeometry;
@@ -361,6 +460,16 @@ private:
     CylinderSourceConfig fCylinderSourceConfig;
     G4LogicalVolume* fCylinderSourceLogical;
     G4LogicalVolume* fCylinderWallLogical;
+    
+    // Cartridge source (Orano LEA Type D)
+    CartridgeSourceConfig fCartridgeSourceConfig;
+    G4LogicalVolume* fCartridgeSourceLogical;
+    G4LogicalVolume* fCartridgeHousingLogical;
+    
+    // Filter source (Orano LEA Type M)
+    FilterSourceConfig fFilterSourceConfig;
+    G4LogicalVolume* fFilterSourceLogical;
+    G4LogicalVolume* fFilterSealLogical;
     
     // Source boundary visualization
     SourceBoundaryConfig fSourceBoundaryConfig;

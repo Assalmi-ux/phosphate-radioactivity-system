@@ -69,6 +69,28 @@ void LoadConfiguration(const G4String& configFile,
     std::string cylinderWallMaterial = "polypropylene";
     std::string cylinderFillMaterial = "water";
     
+    // Cartridge source configuration (Orano LEA Type D)
+    G4bool useCartridgeSource = false;
+    G4double cartridgeHousingDiameter = 56.0;   // mm
+    G4double cartridgeHousingHeight = 26.5;     // mm
+    G4double cartridgeActiveDiameter = 52.0;    // mm
+    G4double cartridgeActiveThickness = 20.5;   // mm
+    G4double cartridgeWallThickness = 2.0;      // mm
+    G4double cartridgePositionZ = -40.0;        // mm
+    std::string cartridgeHousingMaterial = "polycarbonate";
+    std::string cartridgeActiveMaterial = "activated_carbon";
+    
+    // Filter source configuration (Orano LEA Type M)
+    G4bool useFilterSource = false;
+    G4double filterOuterDiameter = 53.0;    // mm (M53 default)
+    G4double filterActiveDiameter = 47.0;   // mm
+    G4double filterThickness = 0.5;         // mm
+    G4double filterSealThickness = 0.05;    // mm
+    G4double filterPositionZ = -30.0;       // mm
+    std::string filterMaterial = "water";
+    std::string filterSealMaterial = "polyester";
+    std::string filterType = "M53";
+    
     // TCS configuration
     G4bool enableTCS = false;
     G4double tcsCoincidenceWindow = 100.0; // ns
@@ -184,6 +206,12 @@ void LoadConfiguration(const G4String& configFile,
             else if (value == "volume") {
                 useCylinderSource = true;
             }
+            else if (value == "cartridge") {
+                useCartridgeSource = true;
+            }
+            else if (value == "filter") {
+                useFilterSource = true;
+            }
         }
         
         // Disk source configuration
@@ -236,6 +264,74 @@ void LoadConfiguration(const G4String& configFile,
         else if (key == "cylinder_fill_material") {
             cylinderFillMaterial = value;
             G4cout << "  Cylinder fill material: " << cylinderFillMaterial << G4endl;
+        }
+        
+        // Cartridge source configuration (Orano LEA Type D)
+        else if (key == "cartridge_housing_diameter") {
+            cartridgeHousingDiameter = std::stod(value);
+            G4cout << "  Cartridge housing diameter: " << cartridgeHousingDiameter << " mm" << G4endl;
+        }
+        else if (key == "cartridge_housing_height") {
+            cartridgeHousingHeight = std::stod(value);
+            G4cout << "  Cartridge housing height: " << cartridgeHousingHeight << " mm" << G4endl;
+        }
+        else if (key == "cartridge_active_diameter") {
+            cartridgeActiveDiameter = std::stod(value);
+            G4cout << "  Cartridge active diameter: " << cartridgeActiveDiameter << " mm" << G4endl;
+        }
+        else if (key == "cartridge_active_thickness") {
+            cartridgeActiveThickness = std::stod(value);
+            G4cout << "  Cartridge active thickness: " << cartridgeActiveThickness << " mm" << G4endl;
+        }
+        else if (key == "cartridge_wall_thickness") {
+            cartridgeWallThickness = std::stod(value);
+            G4cout << "  Cartridge wall thickness: " << cartridgeWallThickness << " mm" << G4endl;
+        }
+        else if (key == "cartridge_position_z") {
+            cartridgePositionZ = std::stod(value);
+            G4cout << "  Cartridge position Z: " << cartridgePositionZ << " mm" << G4endl;
+        }
+        else if (key == "cartridge_housing_material") {
+            cartridgeHousingMaterial = value;
+            G4cout << "  Cartridge housing material: " << value << G4endl;
+        }
+        else if (key == "cartridge_active_material") {
+            cartridgeActiveMaterial = value;
+            G4cout << "  Cartridge active material: " << value << G4endl;
+        }
+        
+        // Filter source configuration (Orano LEA Type M)
+        else if (key == "filter_outer_diameter") {
+            filterOuterDiameter = std::stod(value);
+            G4cout << "  Filter outer diameter: " << filterOuterDiameter << " mm" << G4endl;
+        }
+        else if (key == "filter_active_diameter") {
+            filterActiveDiameter = std::stod(value);
+            G4cout << "  Filter active diameter: " << filterActiveDiameter << " mm" << G4endl;
+        }
+        else if (key == "filter_thickness") {
+            filterThickness = std::stod(value);
+            G4cout << "  Filter thickness: " << filterThickness << " mm" << G4endl;
+        }
+        else if (key == "filter_seal_thickness") {
+            filterSealThickness = std::stod(value);
+            G4cout << "  Filter seal thickness: " << filterSealThickness << " mm" << G4endl;
+        }
+        else if (key == "filter_position_z") {
+            filterPositionZ = std::stod(value);
+            G4cout << "  Filter position Z: " << filterPositionZ << " mm" << G4endl;
+        }
+        else if (key == "filter_material") {
+            filterMaterial = value;
+            G4cout << "  Filter material: " << value << G4endl;
+        }
+        else if (key == "filter_seal_material") {
+            filterSealMaterial = value;
+            G4cout << "  Filter seal material: " << value << G4endl;
+        }
+        else if (key == "filter_type") {
+            filterType = value;
+            G4cout << "  Filter type: " << value << G4endl;
         }
         
         // Marinelli configuration
@@ -513,6 +609,65 @@ void LoadConfiguration(const G4String& configFile,
                << (sampleCenterZ + sampleHeight/2.0) << "] mm" << G4endl;
     }
     
+    // Configure Cartridge source if enabled (Orano LEA Type D)
+    if (useCartridgeSource) {
+        CartridgeSourceConfig cartConfig;
+        cartConfig.isActive = true;
+        cartConfig.housingDiameter = cartridgeHousingDiameter * mm;
+        cartConfig.housingHeight = cartridgeHousingHeight * mm;
+        cartConfig.activeDiameter = cartridgeActiveDiameter * mm;
+        cartConfig.activeThickness = cartridgeActiveThickness * mm;
+        cartConfig.wallThickness = cartridgeWallThickness * mm;
+        cartConfig.positionZ = cartridgePositionZ * mm;
+        cartConfig.housingMaterial = cartridgeHousingMaterial;
+        cartConfig.activeMaterial = cartridgeActiveMaterial;
+        
+        detector->SetCartridgeSourceConfig(cartConfig);
+        detector->EnableCartridgeSource(true);
+        
+        // Configure primary generator for cartridge source
+        G4double activeR = cartridgeActiveDiameter / 2.0;
+        G4double activeCenterZ = cartridgePositionZ + cartridgeHousingHeight / 2.0;
+        
+        primary->SetSourceRadius(activeR * mm);
+        primary->SetSourceHeight(cartridgeActiveThickness * mm);
+        primary->SetSourcePosition(G4ThreeVector(0, 0, activeCenterZ * mm));
+        
+        G4cout << "\n  Cartridge source (Type D) enabled:" << G4endl;
+        G4cout << "    Housing: " << cartridgeHousingDiameter << " x " << cartridgeHousingHeight << " mm" << G4endl;
+        G4cout << "    Active matrix: " << cartridgeActiveDiameter << " x " << cartridgeActiveThickness << " mm" << G4endl;
+        G4cout << "    Position Z: " << cartridgePositionZ << " mm" << G4endl;
+    }
+    
+    // Configure Filter source if enabled (Orano LEA Type M)
+    if (useFilterSource) {
+        FilterSourceConfig filtConfig;
+        filtConfig.isActive = true;
+        filtConfig.outerDiameter = filterOuterDiameter * mm;
+        filtConfig.activeDiameter = filterActiveDiameter * mm;
+        filtConfig.filterThickness = filterThickness * mm;
+        filtConfig.sealThickness = filterSealThickness * mm;
+        filtConfig.positionZ = filterPositionZ * mm;
+        filtConfig.filterMaterial = filterMaterial;
+        filtConfig.sealMaterial = filterSealMaterial;
+        filtConfig.filterType = filterType;
+        
+        detector->SetFilterSourceConfig(filtConfig);
+        detector->EnableFilterSource(true);
+        
+        // Configure primary generator for filter source
+        G4double activeR = filterActiveDiameter / 2.0;
+        
+        primary->SetSourceRadius(activeR * mm);
+        primary->SetSourceHeight(filterThickness * mm);
+        primary->SetSourcePosition(G4ThreeVector(0, 0, filterPositionZ * mm));
+        
+        G4cout << "\n  Filter source (Type " << filterType << ") enabled:" << G4endl;
+        G4cout << "    Outer diameter: " << filterOuterDiameter << " mm" << G4endl;
+        G4cout << "    Active diameter: " << filterActiveDiameter << " mm" << G4endl;
+        G4cout << "    Position Z: " << filterPositionZ << " mm" << G4endl;
+    }
+    
     // Apply custom energies if specified
     if (isCustomEnergy && !customEnergies.empty()) {
         primary->ClearGammaLines();
@@ -567,7 +722,7 @@ void LoadConfiguration(const G4String& configFile,
     
     // Set source position (only for point source - NOT for Marinelli, Disk, or Cylinder)
     // These special geometries have their own position configuration above
-    if (!useMarinelli && !useDiskSource && !useCylinderSource) {
+    if (!useMarinelli && !useDiskSource && !useCylinderSource && !useCartridgeSource && !useFilterSource) {
         primary->SetSourcePosition(G4ThreeVector(srcX*cm, srcY*cm, srcZ*cm));
         detector->SetSourcePosition(srcX*cm, srcY*cm, srcZ*cm);
         G4cout << "  Source position: (" << srcX << ", " << srcY << ", " << srcZ << ") cm" << G4endl;
