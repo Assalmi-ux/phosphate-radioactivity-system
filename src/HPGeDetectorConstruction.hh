@@ -368,6 +368,10 @@ public:
         const G4String& holderMaterial,
         G4double hdpeThickness);
     
+    // Geometry mode control (Canberra real geometry vs FLUKA simplified)
+    void SetUseCanberraGeometry(G4bool use) { fUseCanberraGeometry = use; }
+    G4bool GetUseCanberraGeometry() const { return fUseCanberraGeometry; }
+    
     // Source boundary visualization
     void ConstructSourceBoundary(G4LogicalVolume* worldLogical);
     void SetSourceBoundaryVisualization(const std::string& type,

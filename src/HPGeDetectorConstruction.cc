@@ -1954,9 +1954,12 @@ void HPGeDetectorConstruction::SetDetectorGeometryExtended(
     config.holderMaterial = holderMaterial;
     config.hdpeThickness = hdpeThickness;
     
-    fUseCanberraGeometry = true;
+    // Note: fUseCanberraGeometry is now controlled externally via
+    // SetUseCanberraGeometry() based on geometry_mode config parameter.
+    // Default remains true (Canberra mode).
     
-    G4cout << "\n=== Extended Geometry Updated (Canberra) ===" << G4endl;
+    G4cout << "\n=== Extended Geometry Updated ===" << G4endl;
+    G4cout << "  Mode: " << (fUseCanberraGeometry ? "Canberra" : "FLUKA") << G4endl;
     G4cout << "  Endcap: Ø" << endcapDiameter/mm << " mm, " << endcapMaterial << G4endl;
     G4cout << "  Window: " << windowMaterial << G4endl;
     G4cout << "  Ge to endcap: " << geToEndcapDistance/mm << " mm" << G4endl;

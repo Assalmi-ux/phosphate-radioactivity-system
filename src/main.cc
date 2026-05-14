@@ -486,6 +486,15 @@ void LoadConfiguration(const G4String& configFile,
         }
     }
     
+    // Apply geometry mode (canberra or fluka)
+    if (cfg_geometryMode == "fluka" || cfg_geometryMode == "FLUKA") {
+        detector->SetUseCanberraGeometry(false);
+        G4cout << "  Geometry mode: FLUKA (simplified)" << G4endl;
+    } else {
+        detector->SetUseCanberraGeometry(true);
+        G4cout << "  Geometry mode: Canberra (real geometry)" << G4endl;
+    }
+    
     // Apply detector geometry
     if (extendedGeometryFromConfig || geometryFromConfig) {
         detector->SetDetectorGeometryExtended(

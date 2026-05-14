@@ -1921,7 +1921,7 @@ class DetectorGeometryWidget(QWidget):
     def init_ui(self):
         main_layout = QVBoxLayout()
         
-        title = QLabel("<h3>HPGe Detector Geometry - Canberra Mirion S/N: 21206</h3>")
+        title = QLabel("<h3>HPGe Detector Geometry</h3>")
         title.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(title)
         
@@ -1932,6 +1932,20 @@ class DetectorGeometryWidget(QWidget):
         info.setWordWrap(True)
         info.setStyleSheet("color: #666; margin-bottom: 8px;")
         main_layout.addWidget(info)
+        
+        # === GEOMETRY MODE ===
+        mode_group = QGroupBox("Geometry Mode")
+        mode_layout = QHBoxLayout()
+        mode_layout.addWidget(QLabel("Construction Mode:"))
+        self.geometry_mode = QComboBox()
+        self.geometry_mode.addItems(['canberra', 'fluka'])
+        self.geometry_mode.setCurrentText('canberra')
+        mode_layout.addWidget(self.geometry_mode)
+        mode_info = QLabel("Canberra = real geometry (9 components) | FLUKA = simplified")
+        mode_info.setStyleSheet("color: #666; font-size: 11px;")
+        mode_layout.addWidget(mode_info)
+        mode_group.setLayout(mode_layout)
+        main_layout.addWidget(mode_group)
         
         # === CRYSTAL GROUP ===
         crystal_group = QGroupBox("Crystal (Ge)")
@@ -2158,6 +2172,7 @@ class DetectorGeometryWidget(QWidget):
     
     def load_canberra_preset(self):
         """Load Canberra Mirion S/N:21206 values"""
+        self.geometry_mode.setCurrentText('canberra')
         self.crystal_diameter.setValue(60.5)
         self.crystal_length.setValue(45.4)
         self.hole_diameter.setValue(9.5)
@@ -2178,6 +2193,7 @@ class DetectorGeometryWidget(QWidget):
     
     def load_fluka_preset(self):
         """Load original FLUKA default values"""
+        self.geometry_mode.setCurrentText('fluka')
         self.crystal_diameter.setValue(65.0)
         self.crystal_length.setValue(45.3)
         self.hole_diameter.setValue(12.0)
@@ -2199,7 +2215,8 @@ class DetectorGeometryWidget(QWidget):
     def get_geometry_config_lines(self):
         """Generate config.txt lines for detector geometry"""
         lines = []
-        lines.append(f"# Detector Geometry (Canberra Mirion)")
+        lines.append(f"# Detector Geometry")
+        lines.append(f"geometry_mode = {self.geometry_mode.currentText()}")
         lines.append(f"crystal_diameter = {self.crystal_diameter.value()}")
         lines.append(f"crystal_length = {self.crystal_length.value()}")
         lines.append(f"hole_diameter = {self.hole_diameter.value()}")
